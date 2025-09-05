@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Campeonato Municipal</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🏆 Campeonato Municipal</h1>
+            <nav>
+                <button class="nav-btn active" data-section="config">Configuração</button>
+                <button class="nav-btn" data-section="teams">Times</button>
+                <button class="nav-btn" data-section="schedule">Agenda</button>
+                <button class="nav-btn" data-section="results">Resultados</button>
+                <button class="nav-btn" data-section="table">Tabela</button>
+            </nav>
+        </header>
+
+        <main>
+            <!-- Seção de Configuração do Campeonato -->
+            <section id="config" class="section active">
+                <h2>Configuração do Campeonato</h2>
+                <div class="config-form">
+                    <div class="form-group">
+                        <label for="championship-name">Nome do Campeonato:</label>
+                        <input type="text" id="championship-name" placeholder="Ex: Campeonato Municipal 2024">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="tournament-type">Tipo de Campeonato:</label>
+                        <select id="tournament-type">
+                            <option value="group">Fase de Grupos</option>
+                            <option value="elimination">Eliminatória Simples</option>
+                            <option value="mixed">Grupos + Eliminatórias</option>
+                        </select>
+                    </div>
+
+                    <div id="group-config" class="config-section">
+                        <h3>Configuração de Grupos</h3>
+                        <div class="form-group">
+                            <label for="num-groups">Número de Grupos:</label>
+                            <input type="number" id="num-groups" min="1" max="8" value="2">
+                        </div>
+                        <div class="form-group">
+                            <label>Distribuição Manual de Times:</label>
+                            <p style="font-size: 0.9rem; color: #718096; margin-bottom: 15px;">Os grupos podem ter quantidades diferentes de times. Configure manualmente a distribuição.</p>
+                            <button type="button" id="setup-groups" class="btn-primary" style="margin-bottom: 15px;">Configurar Distribuição dos Grupos</button>
+                        </div>
+                        <div id="groups-distribution" style="display: none;">
+                            <div id="groups-container"></div>
+                        </div>
+                    </div>
+
+                    <div id="elimination-config" class="config-section" style="display: none;">
+                        <h3>Configuração Eliminatória</h3>
+                        <div class="form-group">
+                            <label for="elimination-type">Tipo:</label>
+                            <select id="elimination-type">
+                                <option value="single">Eliminação Simples</option>
+                                <option value="double">Eliminação Dupla</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <button id="save-config" class="btn-primary">Salvar Configuração</button>
+                </div>
+            </section>
+
+            <!-- Seção de Times -->
+            <section id="teams" class="section">
+                <h2>Gerenciar Times</h2>
+                <div class="team-form">
+                    <div class="form-group">
+                        <label for="team-name">Nome do Time:</label>
+                        <input type="text" id="team-name" placeholder="Digite o nome do time">
+                    </div>
+                    <button id="add-team" class="btn-primary">Adicionar Time</button>
+                </div>
+                
+                <div class="teams-list">
+                    <h3>Times Cadastrados</h3>
+                    <div id="teams-container"></div>
+                </div>
+            </section>
+
+            <!-- Seção de Agenda -->
+            <section id="schedule" class="section">
+                <h2>Agenda de Jogos</h2>
+                <div class="schedule-form">
+                    <div class="form-group">
+                        <label for="match-team1">Time 1:</label>
+                        <select id="match-team1" required>
+                            <option value="">Selecione o primeiro time</option>
+                        </select>
+                        <span id="team1-group-indicator" class="group-indicator" style="display: none;"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="match-team2">Time 2:</label>
+                        <select id="match-team2" required>
+                            <option value="">Selecione o segundo time</option>
+                        </select>
+                        <span id="team2-group-indicator" class="group-indicator" style="display: none;"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="match-date">Data:</label>
+                        <input type="date" id="match-date">
+                    </div>
+                    <div class="form-group">
+                        <label for="match-time">Horário:</label>
+                        <input type="time" id="match-time">
+                    </div>
+                    <div class="form-group">
+                        <label for="match-location">Local:</label>
+                        <input type="text" id="match-location" placeholder="Local do jogo">
+                    </div>
+                    <button id="schedule-match" class="btn-primary">Agendar Jogo</button>
+                </div>
+                
+                <div class="matches-list">
+                    <h3>Jogos Agendados</h3>
+                    <div id="matches-container"></div>
+                </div>
+            </section>
+
+            <!-- Seção de Resultados -->
+            <section id="results" class="section">
+                <h2>Registrar Resultados</h2>
+                <div class="results-form">
+                    <div class="form-group">
+                        <label for="result-match">Selecionar Jogo:</label>
+                        <select id="result-match"></select>
+                    </div>
+                    <div class="score-input">
+                        <div class="team-score">
+                            <span id="team1-name">Time 1</span>
+                            <input type="number" id="team1-score" min="0" placeholder="0">
+                        </div>
+                        <span class="vs">X</span>
+                        <div class="team-score">
+                            <span id="team2-name">Time 2</span>
+                            <input type="number" id="team2-score" min="0" placeholder="0">
+                        </div>
+                    </div>
+                    <button id="save-result" class="btn-primary">Salvar Resultado</button>
+                </div>
+                
+                <div class="results-list">
+                    <h3>Resultados Registrados</h3>
+                    <div id="results-container"></div>
+                </div>
+            </section>
+
+            <!-- Seção da Tabela -->
+            <section id="table" class="section">
+                <h2>Tabela de Classificação</h2>
+                <div class="table-container">
+                    <table id="classification-table">
+                        <thead>
+                            <tr>
+                                <th>Pos</th>
+                                <th>Time</th>
+                                <th>J</th>
+                                <th>V</th>
+                                <th>E</th>
+                                <th>D</th>
+                                <th>GP</th>
+                                <th>GC</th>
+                                <th>SG</th>
+                                <th>Pts</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-body">
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
