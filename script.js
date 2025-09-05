@@ -22,6 +22,444 @@ class ChampionshipManager {
         this.updateClassificationTable();
         this.updateTeamSelects();
         this.updateMatchSelects();
+        this.updateInterfaceBasedOnConfig();
+    }
+
+    updateInterfaceBasedOnConfig() {
+        // Atualizar interface baseada na configuração salva
+        if (this.config.structure === 'advanced' && this.config.phases) {
+            this.renderChampionshipSchema();
+            this.renderPhaseNavigation();
+        } else if (this.config.type === 'group') {
+            this.renderGroupsDistribution();
+        }
+    }
+
+    renderChampionshipSchema() {
+        const schemaContainer = document.getElementById('schema-container');
+        const championshipSchema = document.getElementById('championship-schema');
+        
+        if (!this.config.phases || this.config.phases.length === 0) {
+            championshipSchema.style.display = 'none';
+            return;
+        }
+        
+        let schemaHTML = '';
+        
+        this.config.phases.forEach((phase, index) => {
+            const teamsCount = this.getTeamsCountForPhase(phase, index);
+            
+            schemaHTML += `
+                <div class="schema-phase">
+                    <h4>${phase.name}</h4>
+                    <div class="schema-teams">
+                        <div><strong>${teamsCount} equipes</strong></div>
+                        <div>${phase.type === 'group' ? `${phase.numGroups} grupos` : phase.eliminationType}</div>
+                        ${phase.advancement ? `<div>↓ ${phase.advancement} classificam</div>` : ''}
+                    </div>
+                </div>
+            `;
+            
+            if (index < this.config.phases.length - 1) {
+                schemaHTML += '<span class="schema-arrow">→</span>';
+            }
+        });
+        
+        schemaContainer.innerHTML = schemaHTML;
+        championshipSchema.style.display = 'block';
+    }
+
+    getTeamsCountForPhase(phase, phaseIndex) {
+        if (phaseIndex === 0) {
+            return this.teams.length || 16; // Primeira fase usa todas as equipes
+        }
+        
+        const previousPhase = this.config.phases[phaseIndex - 1];
+        return previousPhase.advancement || 8;
+    }
+
+    renderPhaseNavigation() {
+        const phaseNavigation = document.getElementById('phase-navigation');
+        const phaseTabs = document.getElementById('phase-tabs');
+        
+        if (!this.config.phases || this.config.phases.length === 0) {
+            phaseNavigation.style.display = 'none';
+            return;
+        }
+        
+        let tabsHTML = '';
+        
+        this.config.phases.forEach((phase, index) => {
+            const isActive = index === 0; // Primeira fase sempre ativa inicialmente
+            const isDisabled = false; // Por enquanto, todas as fases são acessíveis
+            
+            tabsHTML += `
+                <button class="phase-tab ${isActive ? 'active' : ''} ${isDisabled ? 'disabled' : ''}" 
+                        onclick="championship.switchToPhase(${index})" 
+                        ${isDisabled ? 'disabled' : ''}>
+                    ${phase.name}
+                </button>
+            `;
+        });
+        
+        phaseTabs.innerHTML = tabsHTML;
+        phaseNavigation.style.display = 'block';
+        
+        // Renderizar conteúdo da primeira fase
+        this.renderPhaseContent(0);
+    }
+
+    switchToPhase(phaseIndex) {
+        // Atualizar tabs ativas
+        document.querySelectorAll('.phase-tab').forEach((tab, index) => {
+            tab.classList.toggle('active', index === phaseIndex);
+        });
+        
+        // Renderizar conteúdo da fase
+        this.renderPhaseContent(phaseIndex);
+    }
+
+    renderPhaseContent(phaseIndex) {
+        const phase = this.config.phases[phaseIndex];
+        const tablesContent = document.getElementById('tables-content');
+        
+        if (!phase) {
+            tablesContent.innerHTML = '<p>Fase não encontrada.</p>';
+            return;
+        }
+        
+        let contentHTML = `<h3>📋 ${phase.name}</h3>`;
+        
+        if (phase.type === 'group') {
+            contentHTML += this.renderPhaseGroupTables(phase, phaseIndex);
+        } else {
+            contentHTML += this.renderPhaseEliminationBracket(phase, phaseIndex);
+        }
+        
+        // Adicionar botão de avanço se não for a última fase
+        if (phaseIndex < this.config.phases.length - 1 && phase.advancement) {
+            contentHTML += `
+                <div class="phase-advancement">
+                    <button class="btn-advance" onclick="championship.advanceTeamsToNextPhase(${phaseIndex})">
+                        Avançar ${phase.advancement} equipes para ${this.config.phases[phaseIndex + 1].name}
+                    </button>
+                    <p class="advancement-info">
+                        ${phase.advancement} melhores equipes desta fase avançarão para a próxima
+                    </p>
+                </div>
+            `;
+        }
+        
+        tablesContent.innerHTML = contentHTML;
+    }
+
+    renderPhaseGroupTables(phase, phaseIndex) {
+        let html = '<div class="phase-groups">';
+        
+        // Calcular quantas equipes se classificam por grupo
+        const teamsPerGroup = phase.advancement ? Math.ceil(phase.advancement / phase.numGroups) : 0;
+        
+        for (let i = 0; i < phase.numGroups; i++) {
+            const groupLetter = String.fromCharCode(65 + i); // A, B, C...
+            
+            html += `
+                <div class="group-table">
+                    <div class="group-header">
+                        <h4>Grupo ${groupLetter}</h4>
+                        <span class="team-count">0 times</span>
+                        ${phase.advancement ? `<span class="qualification-info">${teamsPerGroup} classificam</span>` : ''}
+                    </div>
+                    <table class="classification-table">
+                        <thead>
+                            <tr>
+                                <th>Pos</th>
+                                <th>Time</th>
+                                <th>PJ</th>
+                                <th>V</th>
+                                <th>E</th>
+                                <th>D</th>
+                                <th>GP</th>
+                                <th>GC</th>
+                                <th>SG</th>
+                                <th>Pts</th>
+                                ${phase.advancement ? '<th>Status</th>' : ''}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${this.renderPhaseGroupTableRows(phase, phaseIndex, i, teamsPerGroup)}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+        
+        html += '</div>';
+        return html;
+    }
+    
+    renderPhaseGroupTableRows(phase, phaseIndex, groupIndex, teamsPerGroup) {
+        // Verificar se há times configurados para esta fase
+        const phaseTeamsKey = `phase_${phaseIndex}_teams`;
+        const phaseTeams = JSON.parse(localStorage.getItem(phaseTeamsKey) || '[]');
+        
+        if (phaseTeams.length === 0) {
+            return `
+                <tr>
+                    <td colspan="${phase.advancement ? '11' : '10'}" style="text-align: center; padding: 20px; color: #718096;">
+                        Aguardando times para esta fase
+                    </td>
+                </tr>
+            `;
+        }
+        
+        // Filtrar times do grupo atual
+        const groupTeams = phaseTeams.filter(team => team.group === groupIndex);
+        
+        if (groupTeams.length === 0) {
+            return `
+                <tr>
+                    <td colspan="${phase.advancement ? '11' : '10'}" style="text-align: center; padding: 20px; color: #718096;">
+                        Nenhum time neste grupo
+                    </td>
+                </tr>
+            `;
+        }
+        
+        // Calcular estatísticas dos times baseado nas partidas da fase
+        const phaseMatchesKey = `phase_${phaseIndex}_matches`;
+        const phaseMatches = JSON.parse(localStorage.getItem(phaseMatchesKey) || '[]');
+        
+        // Inicializar estatísticas
+        const teamStats = {};
+        groupTeams.forEach(team => {
+            teamStats[team.id] = {
+                name: team.name,
+                matches: 0,
+                wins: 0,
+                draws: 0,
+                losses: 0,
+                goalsFor: 0,
+                goalsAgainst: 0,
+                points: 0
+            };
+        });
+        
+        // Processar partidas com resultados
+        phaseMatches.forEach(match => {
+            if (match.result && match.result.team1Goals !== undefined && match.result.team2Goals !== undefined) {
+                const team1Stats = teamStats[match.team1Id];
+                const team2Stats = teamStats[match.team2Id];
+                
+                if (team1Stats && team2Stats) {
+                    const goals1 = parseInt(match.result.team1Goals);
+                    const goals2 = parseInt(match.result.team2Goals);
+                    
+                    team1Stats.matches++;
+                    team2Stats.matches++;
+                    team1Stats.goalsFor += goals1;
+                    team1Stats.goalsAgainst += goals2;
+                    team2Stats.goalsFor += goals2;
+                    team2Stats.goalsAgainst += goals1;
+                    
+                    if (goals1 > goals2) {
+                        team1Stats.wins++;
+                        team1Stats.points += 3;
+                        team2Stats.losses++;
+                    } else if (goals1 < goals2) {
+                        team2Stats.wins++;
+                        team2Stats.points += 3;
+                        team1Stats.losses++;
+                    } else {
+                        team1Stats.draws++;
+                        team2Stats.draws++;
+                        team1Stats.points += 1;
+                        team2Stats.points += 1;
+                    }
+                }
+            }
+        });
+        
+        // Ordenar times por pontos, saldo de gols e gols pró
+        const sortedTeams = Object.values(teamStats).sort((a, b) => {
+            if (b.points !== a.points) return b.points - a.points;
+            const saldoA = a.goalsFor - a.goalsAgainst;
+            const saldoB = b.goalsFor - b.goalsAgainst;
+            if (saldoB !== saldoA) return saldoB - saldoA;
+            return b.goalsFor - a.goalsFor;
+        });
+        
+        // Renderizar linhas da tabela
+        return sortedTeams.map((team, index) => {
+            const saldo = team.goalsFor - team.goalsAgainst;
+            let statusCell = '';
+            
+            if (phase.advancement) {
+                let status = 'pending';
+                let statusText = 'Pendente';
+                
+                if (index < teamsPerGroup) {
+                    status = 'qualified';
+                    statusText = 'Classificado';
+                } else if (team.matches > 0) {
+                    status = 'eliminated';
+                    statusText = 'Eliminado';
+                }
+                
+                statusCell = `<td><span class="status-${status}">${statusText}</span></td>`;
+            }
+            
+            return `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td style="text-align: left; font-weight: 600;">${team.name}</td>
+                    <td>${team.matches}</td>
+                    <td>${team.wins}</td>
+                    <td>${team.draws}</td>
+                    <td>${team.losses}</td>
+                    <td>${team.goalsFor}</td>
+                    <td>${team.goalsAgainst}</td>
+                    <td>${saldo >= 0 ? '+' : ''}${saldo}</td>
+                    <td style="font-weight: bold; color: #667eea;">${team.points}</td>
+                    ${statusCell}
+                </tr>
+            `;
+        }).join('');
+    }
+
+    renderPhaseEliminationBracket(phase, phaseIndex) {
+        return `
+            <div class="elimination-bracket">
+                <div style="text-align: center; padding: 40px; background: #f8fafc; border-radius: 8px; color: #718096;">
+                    <h4>Chaveamento da ${phase.name}</h4>
+                    <p>Tipo: ${phase.eliminationType === 'single' ? 'Eliminação Simples' : 'Eliminação Dupla'}</p>
+                    <p>Aguardando times classificados da fase anterior</p>
+                </div>
+            </div>
+        `;
+    }
+
+    // Sistema de Avanço de Equipes
+    advanceTeamsToNextPhase(currentPhaseIndex) {
+        if (!this.config.phases || currentPhaseIndex >= this.config.phases.length - 1) {
+            return; // Não há próxima fase
+        }
+
+        const currentPhase = this.config.phases[currentPhaseIndex];
+        const nextPhase = this.config.phases[currentPhaseIndex + 1];
+        
+        if (!currentPhase.advancement) {
+            this.showMessage('Número de equipes que avançam não foi configurado para esta fase.', 'error');
+            return;
+        }
+
+        let qualifiedTeams = [];
+
+        if (currentPhase.type === 'group') {
+            qualifiedTeams = this.getQualifiedTeamsFromGroups(currentPhase);
+        } else {
+            qualifiedTeams = this.getQualifiedTeamsFromElimination(currentPhase);
+        }
+
+        if (qualifiedTeams.length < currentPhase.advancement) {
+            this.showMessage(`Ainda não há equipes suficientes classificadas. Necessário: ${currentPhase.advancement}, Atual: ${qualifiedTeams.length}`, 'warning');
+            return;
+        }
+
+        // Configurar equipes para a próxima fase
+        this.setupTeamsForPhase(nextPhase, qualifiedTeams.slice(0, currentPhase.advancement), currentPhaseIndex + 1);
+        
+        this.showMessage(`${currentPhase.advancement} equipes avançaram para ${nextPhase.name}!`, 'success');
+        this.updateInterfaceBasedOnConfig();
+    }
+
+    getQualifiedTeamsFromGroups(phase) {
+        const qualifiedTeams = [];
+        
+        if (!this.config.groupsDistribution) return qualifiedTeams;
+
+        this.config.groupsDistribution.forEach(group => {
+            const groupTeams = group.teams.map(teamData => {
+                const team = this.teams.find(t => t.id === teamData.id);
+                return team || teamData;
+            });
+
+            // Ordenar por pontos, saldo de gols, etc.
+            const sortedTeams = groupTeams.sort((a, b) => {
+                if (b.stats.points !== a.stats.points) {
+                    return b.stats.points - a.stats.points;
+                }
+                const saldoA = a.stats.goalsFor - a.stats.goalsAgainst;
+                const saldoB = b.stats.goalsFor - b.stats.goalsAgainst;
+                if (saldoB !== saldoA) {
+                    return saldoB - saldoA;
+                }
+                return b.stats.goalsFor - a.stats.goalsFor;
+            });
+
+            // Pegar os primeiros colocados de cada grupo
+            const teamsPerGroup = Math.ceil(phase.advancement / phase.numGroups);
+            qualifiedTeams.push(...sortedTeams.slice(0, teamsPerGroup));
+        });
+
+        return qualifiedTeams;
+    }
+
+    getQualifiedTeamsFromElimination(phase) {
+        // Implementação futura para eliminatórias
+        return [];
+    }
+
+    setupTeamsForPhase(phase, teams, phaseIndex) {
+        if (phase.type === 'group') {
+            // Distribuir equipes nos grupos da próxima fase
+            this.distributeTeamsInPhaseGroups(phase, teams, phaseIndex);
+        } else {
+            // Configurar chave eliminatória
+            this.setupEliminationBracket(phase, teams, phaseIndex);
+        }
+    }
+
+    distributeTeamsInPhaseGroups(phase, teams, phaseIndex) {
+        const teamsPerGroup = Math.ceil(teams.length / phase.numGroups);
+        const phaseGroups = [];
+
+        for (let i = 0; i < phase.numGroups; i++) {
+            const groupTeams = teams.slice(i * teamsPerGroup, (i + 1) * teamsPerGroup);
+            phaseGroups.push({
+                name: `Grupo ${String.fromCharCode(65 + i)} - ${phase.name}`,
+                teams: groupTeams.map(team => ({
+                    id: team.id,
+                    name: team.name
+                }))
+            });
+        }
+
+        // Salvar configuração da fase
+        if (!this.config.phaseConfigurations) {
+            this.config.phaseConfigurations = {};
+        }
+        
+        this.config.phaseConfigurations[phaseIndex] = {
+            groupsDistribution: phaseGroups
+        };
+        
+        localStorage.setItem('config', JSON.stringify(this.config));
+    }
+
+    setupEliminationBracket(phase, teams, phaseIndex) {
+        // Implementação futura para chaves eliminatórias
+        if (!this.config.phaseConfigurations) {
+            this.config.phaseConfigurations = {};
+        }
+        
+        this.config.phaseConfigurations[phaseIndex] = {
+            eliminationTeams: teams.map(team => ({
+                id: team.id,
+                name: team.name
+            }))
+        };
+        
+        localStorage.setItem('config', JSON.stringify(this.config));
     }
 
     setupEventListeners() {
@@ -33,18 +471,30 @@ class ChampionshipManager {
         });
 
         // Configuração
-        document.getElementById('tournament-type').addEventListener('change', (e) => {
-            this.toggleConfigSections(e.target.value);
+        document.getElementById('tournament-structure').addEventListener('change', () => {
+            this.toggleConfigSections();
+        });
+        document.getElementById('simple-type').addEventListener('change', () => {
+            this.toggleSimpleConfigSections();
+        });
+        document.getElementById('num-phases').addEventListener('change', () => {
+            this.setupPhases();
         });
         document.getElementById('save-config').addEventListener('click', () => {
             this.saveConfig();
         });
-        document.getElementById('setup-groups').addEventListener('click', () => {
-            this.setupGroupsDistribution();
-        });
-        document.getElementById('num-groups').addEventListener('change', () => {
-            this.hideGroupsDistribution();
-        });
+        const simpleSetupGroupsBtn = document.getElementById('simple-setup-groups');
+        if (simpleSetupGroupsBtn) {
+            simpleSetupGroupsBtn.addEventListener('click', () => {
+                this.setupGroupsDistribution();
+            });
+        }
+        const numGroupsElement = document.getElementById('num-groups');
+        if (numGroupsElement) {
+            numGroupsElement.addEventListener('change', () => {
+                this.hideGroupsDistribution();
+            });
+        }
 
         // Times
         document.getElementById('add-team').addEventListener('click', () => {
@@ -79,43 +529,195 @@ class ChampionshipManager {
         document.querySelector(`[data-section="${sectionName}"]`).classList.add('active');
     }
 
-    toggleConfigSections(type) {
-        const groupConfig = document.getElementById('group-config');
-        const eliminationConfig = document.getElementById('elimination-config');
+    toggleConfigSections() {
+        const tournamentStructure = document.getElementById('tournament-structure').value;
+        const simpleConfig = document.getElementById('simple-config');
+        const advancedConfig = document.getElementById('advanced-config');
+        
+        if (tournamentStructure === 'simple') {
+            simpleConfig.style.display = 'block';
+            advancedConfig.style.display = 'none';
+            this.toggleSimpleConfigSections();
+        } else {
+            simpleConfig.style.display = 'none';
+            advancedConfig.style.display = 'block';
+        }
+    }
 
-        if (type === 'group' || type === 'mixed') {
+    toggleSimpleConfigSections() {
+        const simpleType = document.getElementById('simple-type').value;
+        const groupConfig = document.getElementById('simple-group-config');
+        const eliminationConfig = document.getElementById('simple-elimination-config');
+        
+        if (simpleType === 'group') {
             groupConfig.style.display = 'block';
+            eliminationConfig.style.display = 'none';
         } else {
             groupConfig.style.display = 'none';
-        }
-
-        if (type === 'elimination' || type === 'mixed') {
             eliminationConfig.style.display = 'block';
-        } else {
+        }
+    }
+
+    setupPhases() {
+        const numPhases = parseInt(document.getElementById('num-phases').value);
+        const phasesContainer = document.getElementById('phases-container');
+        const phasesConfiguration = document.getElementById('phases-configuration');
+        
+        phasesContainer.innerHTML = '';
+        
+        for (let i = 1; i <= numPhases; i++) {
+            const phaseDiv = document.createElement('div');
+            phaseDiv.className = 'phase-config';
+            phaseDiv.innerHTML = `
+                <h4>
+                    <span class="phase-number">${i}</span>
+                    Fase ${i} ${i === 1 ? '(Inicial)' : i === numPhases ? '(Final)' : ''}
+                </h4>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="phase-${i}-type">Tipo da Fase:</label>
+                        <select id="phase-${i}-type" onchange="championship.togglePhaseConfig(${i})">
+                            <option value="group">Fase de Grupos</option>
+                            <option value="elimination">Eliminatória</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group" id="phase-${i}-groups-config">
+                        <label for="phase-${i}-groups">Número de Grupos:</label>
+                        <input type="number" id="phase-${i}-groups" min="1" max="8" value="2">
+                    </div>
+                    
+                    <div class="form-group" id="phase-${i}-elimination-config" style="display: none;">
+                        <label for="phase-${i}-elimination-type">Tipo de Eliminatória:</label>
+                        <select id="phase-${i}-elimination-type">
+                            <option value="single">Eliminação Simples</option>
+                            <option value="double">Eliminação Dupla</option>
+                        </select>
+                    </div>
+                </div>
+                
+                ${i < numPhases ? `
+                    <div class="advancement-config">
+                        <label for="phase-${i}-advancement">Equipes que avançam para a Fase ${i + 1}:</label>
+                        <input type="number" id="phase-${i}-advancement" min="1" value="${Math.max(2, Math.ceil(16 / Math.pow(2, i-1)))}">
+                        <p class="form-help">Número total de equipes que se classificam desta fase</p>
+                    </div>
+                ` : ''}
+            `;
+            
+            phasesContainer.appendChild(phaseDiv);
+        }
+        
+        phasesConfiguration.style.display = 'block';
+    }
+
+    togglePhaseConfig(phaseNumber) {
+        const phaseType = document.getElementById(`phase-${phaseNumber}-type`).value;
+        const groupsConfig = document.getElementById(`phase-${phaseNumber}-groups-config`);
+        const eliminationConfig = document.getElementById(`phase-${phaseNumber}-elimination-config`);
+        
+        if (phaseType === 'group') {
+            groupsConfig.style.display = 'block';
             eliminationConfig.style.display = 'none';
+        } else {
+            groupsConfig.style.display = 'none';
+            eliminationConfig.style.display = 'block';
         }
     }
 
     saveConfig() {
-        this.config = {
+        const structure = document.getElementById('tournament-structure').value;
+        
+        const config = {
             name: document.getElementById('championship-name').value,
-            type: document.getElementById('tournament-type').value,
-            numGroups: parseInt(document.getElementById('num-groups').value),
-            groupsDistribution: this.config.groupsDistribution || [],
-            eliminationType: document.getElementById('elimination-type').value
+            structure: structure,
+            roundTrip: document.getElementById('round-trip').checked
         };
-
+        
+        if (structure === 'simple') {
+            const simpleType = document.getElementById('simple-type').value;
+            config.type = simpleType;
+            
+            if (simpleType === 'group') {
+                config.numGroups = parseInt(document.getElementById('simple-num-groups').value) || 2;
+            } else {
+                config.eliminationType = document.getElementById('simple-elimination-type').value;
+            }
+        } else {
+            // Configuração avançada
+            const numPhases = parseInt(document.getElementById('num-phases').value) || 2;
+            config.phases = [];
+            
+            for (let i = 1; i <= numPhases; i++) {
+                const phaseType = document.getElementById(`phase-${i}-type`).value;
+                const phase = {
+                    number: i,
+                    type: phaseType,
+                    name: `Fase ${i}`
+                };
+                
+                if (phaseType === 'group') {
+                    phase.numGroups = parseInt(document.getElementById(`phase-${i}-groups`).value) || 2;
+                } else {
+                    phase.eliminationType = document.getElementById(`phase-${i}-elimination-type`).value;
+                }
+                
+                if (i < numPhases) {
+                    phase.advancement = parseInt(document.getElementById(`phase-${i}-advancement`).value) || 2;
+                }
+                
+                config.phases.push(phase);
+            }
+        }
+        
+        // Manter distribuição de grupos se existir
+        config.groupsDistribution = this.config.groupsDistribution || [];
+        
+        this.config = config;
         localStorage.setItem('config', JSON.stringify(this.config));
         this.showMessage('Configuração salva com sucesso!', 'success');
     }
 
     loadConfig() {
-        document.getElementById('championship-name').value = this.config.name;
-        document.getElementById('tournament-type').value = this.config.type;
-        document.getElementById('num-groups').value = this.config.numGroups;
-        document.getElementById('elimination-type').value = this.config.eliminationType;
+        document.getElementById('championship-name').value = this.config.name || '';
         
-        this.toggleConfigSections(this.config.type);
+        const structure = this.config.structure || 'simple';
+        document.getElementById('tournament-structure').value = structure;
+        document.getElementById('round-trip').checked = this.config.roundTrip || false;
+        
+        if (structure === 'simple') {
+            const type = this.config.type || 'group';
+            document.getElementById('simple-type').value = type;
+            
+            if (type === 'group') {
+                document.getElementById('simple-num-groups').value = this.config.numGroups || 2;
+            } else {
+                document.getElementById('simple-elimination-type').value = this.config.eliminationType || 'single';
+            }
+        } else if (this.config.phases) {
+            document.getElementById('num-phases').value = this.config.phases.length;
+            this.setupPhases();
+            
+            // Carregar configurações de cada fase
+            this.config.phases.forEach(phase => {
+                document.getElementById(`phase-${phase.number}-type`).value = phase.type;
+                
+                if (phase.type === 'group') {
+                    document.getElementById(`phase-${phase.number}-groups`).value = phase.numGroups || 2;
+                } else {
+                    document.getElementById(`phase-${phase.number}-elimination-type`).value = phase.eliminationType || 'single';
+                }
+                
+                if (phase.advancement) {
+                    document.getElementById(`phase-${phase.number}-advancement`).value = phase.advancement;
+                }
+                
+                this.togglePhaseConfig(phase.number);
+            });
+        }
+        
+        this.toggleConfigSections();
         
         if (this.config.groupsDistribution && this.config.groupsDistribution.length > 0) {
             this.renderGroupsDistribution();
@@ -476,7 +1078,12 @@ class ChampionshipManager {
         const team1 = this.teams.find(t => t.id === team1Id);
         const team2 = this.teams.find(t => t.id === team2Id);
 
-        const match = {
+        // Verificar se é ida e volta
+        const isRoundTrip = this.config.roundTrip;
+        const matches = [];
+
+        // Jogo de ida
+        const firstMatch = {
             id: Date.now(),
             team1: { id: team1Id, name: team1.name },
             team2: { id: team2Id, name: team2.name },
@@ -484,10 +1091,31 @@ class ChampionshipManager {
             time: time,
             location: location,
             status: 'scheduled',
-            result: null
+            result: null,
+            leg: isRoundTrip ? 'ida' : null
         };
+        matches.push(firstMatch);
 
-        this.matches.push(match);
+        // Jogo de volta (se configurado)
+        if (isRoundTrip) {
+            const returnDate = new Date(date);
+            returnDate.setDate(returnDate.getDate() + 7); // Uma semana depois
+            
+            const secondMatch = {
+                id: Date.now() + 1,
+                team1: { id: team2Id, name: team2.name }, // Times invertidos
+                team2: { id: team1Id, name: team1.name },
+                date: returnDate.toISOString().split('T')[0],
+                time: time,
+                location: location,
+                status: 'scheduled',
+                result: null,
+                leg: 'volta'
+            };
+            matches.push(secondMatch);
+        }
+
+        this.matches.push(...matches);
         this.saveMatches();
         this.renderMatches();
         this.updateMatchSelects();
@@ -499,7 +1127,8 @@ class ChampionshipManager {
         document.getElementById('match-time').value = '';
         document.getElementById('match-location').value = '';
         
-        this.showMessage('Jogo agendado com sucesso!', 'success');
+        const message = isRoundTrip ? 'Jogos de ida e volta agendados com sucesso!' : 'Jogo agendado com sucesso!';
+        this.showMessage(message, 'success');
     }
 
     deleteMatch(matchId) {
@@ -525,10 +1154,16 @@ class ChampionshipManager {
             const statusClass = match.status === 'completed' ? 'status-completed' : 'status-scheduled';
             const statusText = match.status === 'completed' ? 'Finalizado' : 'Agendado';
             
+            // Indicador de ida/volta
+            const legIndicator = match.leg ? `<span class="leg-indicator leg-${match.leg}">${match.leg.toUpperCase()}</span>` : '';
+            
             return `
                 <div class="match-card">
                     <div class="match-info">
-                        <div class="match-teams">${match.team1.name} vs ${match.team2.name}</div>
+                        <div class="match-teams">
+                            ${match.team1.name} vs ${match.team2.name}
+                            ${legIndicator}
+                        </div>
                         <div class="match-details">
                             📅 ${dateTime} | 📍 ${match.location || 'Local não informado'}
                             <span class="status-badge ${statusClass}">${statusText}</span>
@@ -656,10 +1291,16 @@ class ChampionshipManager {
         container.innerHTML = completedMatches.map(match => {
             const dateTime = new Date(`${match.date}T${match.time}`).toLocaleString('pt-BR');
             
+            // Indicador de ida/volta
+            const legIndicator = match.leg ? `<span class="leg-indicator leg-${match.leg}">${match.leg.toUpperCase()}</span>` : '';
+            
             return `
                 <div class="result-card">
                     <div class="result-info">
-                        <div class="match-teams">${match.team1.name} vs ${match.team2.name}</div>
+                        <div class="match-teams">
+                            ${match.team1.name} vs ${match.team2.name}
+                            ${legIndicator}
+                        </div>
                         <div class="result-score">${match.result.team1Score} x ${match.result.team2Score}</div>
                         <div class="match-details">📅 ${dateTime} | 📍 ${match.location || 'Local não informado'}</div>
                     </div>

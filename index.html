@@ -30,39 +30,73 @@
                     </div>
                     
                     <div class="form-group">
-                        <label for="tournament-type">Tipo de Campeonato:</label>
-                        <select id="tournament-type">
-                            <option value="group">Fase de Grupos</option>
-                            <option value="elimination">Eliminatória Simples</option>
-                            <option value="mixed">Grupos + Eliminatórias</option>
+                        <label for="tournament-structure">Estrutura do Campeonato:</label>
+                        <select id="tournament-structure">
+                            <option value="simple">Estrutura Simples (1 Fase)</option>
+                            <option value="advanced">Estrutura Avançada (Múltiplas Fases)</option>
                         </select>
                     </div>
 
-                    <div id="group-config" class="config-section">
-                        <h3>Configuração de Grupos</h3>
+                    <!-- Configuração Simples -->
+                    <div id="simple-config" class="config-section">
                         <div class="form-group">
-                            <label for="num-groups">Número de Grupos:</label>
-                            <input type="number" id="num-groups" min="1" max="8" value="2">
+                            <label for="simple-type">Tipo de Fase:</label>
+                            <select id="simple-type">
+                                <option value="group">Fase de Grupos</option>
+                                <option value="elimination">Eliminatória</option>
+                            </select>
                         </div>
-                        <div class="form-group">
-                            <label>Distribuição Manual de Times:</label>
-                            <p style="font-size: 0.9rem; color: #718096; margin-bottom: 15px;">Os grupos podem ter quantidades diferentes de times. Configure manualmente a distribuição.</p>
-                            <button type="button" id="setup-groups" class="btn-primary" style="margin-bottom: 15px;">Configurar Distribuição dos Grupos</button>
+
+                        <div id="simple-group-config" class="sub-config">
+                            <div class="form-group">
+                                <label for="simple-num-groups">Número de Grupos:</label>
+                                <input type="number" id="simple-num-groups" min="1" max="8" value="2">
+                            </div>
+                            <div class="form-group">
+                                <label>Distribuição Manual de Times:</label>
+                                <button type="button" id="simple-setup-groups" class="btn-secondary">Configurar Grupos</button>
+                            </div>
                         </div>
-                        <div id="groups-distribution" style="display: none;">
-                            <div id="groups-container"></div>
+
+                        <div id="simple-elimination-config" class="sub-config" style="display: none;">
+                            <div class="form-group">
+                                <label for="simple-elimination-type">Tipo de Eliminatória:</label>
+                                <select id="simple-elimination-type">
+                                    <option value="single">Eliminação Simples</option>
+                                    <option value="double">Eliminação Dupla</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
 
-                    <div id="elimination-config" class="config-section" style="display: none;">
-                        <h3>Configuração Eliminatória</h3>
+                    <!-- Configuração Avançada -->
+                    <div id="advanced-config" class="config-section" style="display: none;">
+                        <h3>🏆 Configuração Avançada de Fases</h3>
                         <div class="form-group">
-                            <label for="elimination-type">Tipo:</label>
-                            <select id="elimination-type">
-                                <option value="single">Eliminação Simples</option>
-                                <option value="double">Eliminação Dupla</option>
-                            </select>
+                            <label for="num-phases">Número de Fases:</label>
+                            <input type="number" id="num-phases" min="1" max="5" value="2">
+                            <button type="button" id="setup-phases" class="btn-secondary">Configurar Fases</button>
                         </div>
+                        
+                        <div id="phases-configuration" style="display: none;">
+                            <div id="phases-container"></div>
+                        </div>
+                    </div>
+
+                    <!-- Configurações Gerais -->
+                    <div class="config-section">
+                        <h3>⚽ Configurações de Partidas</h3>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="round-trip"> 
+                                Partidas de ida e volta
+                            </label>
+                            <p class="form-help">Cada confronto terá dois jogos (ida e volta)</p>
+                        </div>
+                    </div>
+
+                    <div id="groups-distribution" style="display: none;">
+                        <div id="groups-container"></div>
                     </div>
 
                     <button id="save-config" class="btn-primary">Salvar Configuração</button>
@@ -156,6 +190,19 @@
             <!-- Seção da Tabela -->
             <section id="table" class="section">
                 <h2>Tabela de Classificação</h2>
+                
+                <!-- Esquema do Campeonato -->
+                <div id="championship-schema" style="display: none;">
+                    <h3>📊 Esquema do Campeonato</h3>
+                    <div id="schema-container" class="schema-container"></div>
+                </div>
+                
+                <!-- Navegação entre Fases -->
+                <div id="phase-navigation" style="display: none;">
+                    <h3>🏆 Navegação por Fases</h3>
+                    <div id="phase-tabs" class="phase-tabs"></div>
+                </div>
+                
                 <div class="table-container">
                     <table id="classification-table">
                         <thead>

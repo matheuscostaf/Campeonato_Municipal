@@ -147,6 +147,272 @@ nav {
     margin-bottom: 15px;
 }
 
+.sub-config {
+    margin: 15px 0;
+    padding: 10px;
+    border-left: 3px solid #4299e1;
+    background-color: #ebf8ff;
+    border-radius: 0 5px 5px 0;
+}
+
+.form-help {
+    font-size: 0.85rem;
+    color: #718096;
+    margin: 5px 0 0 0;
+    font-style: italic;
+}
+
+/* Configuração de fases */
+.phase-config {
+    margin: 15px 0;
+    padding: 15px;
+    border: 1px solid #cbd5e0;
+    border-radius: 8px;
+    background-color: #ffffff;
+    position: relative;
+}
+
+.phase-config h4 {
+    margin: 0 0 15px 0;
+    color: #2d3748;
+    font-size: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.phase-number {
+    background: #4299e1;
+    color: white;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.phase-config .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.phase-config .form-group {
+    margin-bottom: 10px;
+}
+
+.advancement-config {
+    background-color: #f0fff4;
+    border: 1px solid #9ae6b4;
+    border-radius: 5px;
+    padding: 10px;
+    margin-top: 10px;
+}
+
+.advancement-config label {
+    font-weight: 600;
+    color: #22543d;
+}
+
+/* Esquema do Campeonato */
+.schema-container {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 15px 0;
+    overflow-x: auto;
+}
+
+.schema-phase {
+    display: inline-block;
+    vertical-align: top;
+    margin: 0 15px;
+    text-align: center;
+    min-width: 150px;
+}
+
+.schema-phase h4 {
+    background: #4299e1;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    margin: 0 0 10px 0;
+    font-size: 0.9rem;
+}
+
+.schema-teams {
+    background: white;
+    border: 1px solid #cbd5e0;
+    border-radius: 6px;
+    padding: 10px;
+    font-size: 0.85rem;
+}
+
+.schema-arrow {
+    display: inline-block;
+    vertical-align: middle;
+    margin: 0 10px;
+    font-size: 1.5rem;
+    color: #4299e1;
+}
+
+/* Navegação por Fases */
+.phase-tabs {
+    display: flex;
+    gap: 10px;
+    margin: 15px 0;
+    flex-wrap: wrap;
+}
+
+.phase-tab {
+    background: #e2e8f0;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.phase-tab:hover {
+    background: #cbd5e0;
+}
+
+.phase-tab.active {
+    background: #4299e1;
+    color: white;
+}
+
+.phase-tab.disabled {
+    background: #f7fafc;
+    color: #a0aec0;
+    cursor: not-allowed;
+}
+
+.phase-content {
+    display: none;
+}
+
+.phase-content.active {
+    display: block;
+}
+
+/* Indicadores de Ida e Volta */
+.leg-indicator {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.75em;
+    font-weight: bold;
+    margin-left: 8px;
+    text-transform: uppercase;
+}
+
+.leg-ida {
+    background: #e3f2fd;
+    color: #1976d2;
+    border: 1px solid #bbdefb;
+}
+
+.leg-volta {
+    background: #f3e5f5;
+    color: #7b1fa2;
+    border: 1px solid #e1bee7;
+}
+
+/* Avanço de Fases */
+.phase-advancement {
+    margin: 30px 0;
+    padding: 20px;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.btn-advance {
+    background: #28a745;
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-bottom: 10px;
+}
+
+.btn-advance:hover {
+    background: #218838;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
+}
+
+.btn-advance:active {
+    transform: translateY(0);
+}
+
+.advancement-info {
+    margin: 0;
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+.qualified-indicator {
+    background: #48bb78;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 0.75rem;
+    margin-left: 5px;
+}
+
+.qualification-info {
+    background: #e3f2fd;
+    color: #1976d2;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-left: 10px;
+}
+
+.status-qualified {
+    background: #d4edda;
+    color: #155724;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-align: center;
+}
+
+.status-eliminated {
+    background: #f8d7da;
+    color: #721c24;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-align: center;
+}
+
+.status-pending {
+    background: #fff3cd;
+    color: #856404;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-align: center;
+}
+
 .team-form,
 .schedule-form,
 .results-form {
